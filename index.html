@@ -1,0 +1,77 @@
+<html>
+<head></head>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script lang="js">
+        
+        async function run(){
+            const trainingUrl = '/data/train.csv';
+            
+            const trainingData = tf.data.csv(trainingUrl, {
+                
+                columnConfigs : {
+                    diagnosis : {
+                        isLabel : true
+                    }
+                }
+                
+            });
+            const convertedTrainingData = trainingData.map(({xs, ys}) => {
+                return{ xs : Object.values(xs), ys: Object.values(ys)};
+            }).batch(10);
+                  
+            const testingUrl = '/data/test.csv';
+            const testingData = tf.data.csv(testingUrl, {
+                
+                columnConfigs : {
+                    diagnosis : {
+                        isLabel : true
+                    }
+                }
+                
+            });
+            
+
+            const convertedTestingData = testingData.map(({xs,ys}) => {
+                return { xs : Object.values(xs), ys : Object.values(ys)};
+            }).batch(10);
+                  
+
+
+            const numOfFeatures = (await trainingData.columnNames()).length - 1;
+            console.log(numOfFeatures)
+    
+            const model = tf.sequential();            
+            model.add(tf.layers.dense({inputShape: [numOfFeatures], activation:"relu",units:10})),
+            model.add(tf.layers.dense({activation:"relu", units:10}))
+            model.add(tf.layers.dense({activation:"sigmoid",units:1}))
+            model.compile({loss : "binaryCrossentropy", optimizer : tf.train.adam(0.03), metrics : ['accuracy']});
+            
+            
+            await model.fitDataset(convertedTrainingData, 
+                             {epochs:10,
+                              validationData: convertedTestingData,
+                              callbacks:{
+                                  onEpochEnd: async(epoch, logs) =>{
+                                      console.log("Epoch: " + epoch + " Loss: " + logs.loss + " Accuracy: " + logs.acc);
+                                  }
+                              }});
+            //await model.save('downloads://my_model');
+
+            testVal = tf.tensor2d([0.3815675768,-1.74824194,0.4398250588,0.2322171451,2.124655378,1.034636699,1.488953499,1.582412838,0.5722379129,1.177740412,0.06469273885,-1.018869576,-0.009946784933,0.09132907804,-0.5669326934,-0.1059561913,0.3719545727,0.2637457429,-0.318201638,0.1755797923,0.5186922936,-1.394626457,0.5311131818,0.3769692998,0.9132726375,0.6959424879,1.582147395,1.046028789,0.4955949451,0.9839401465],[1,30]);
+        const prediction = model.predict(testVal);
+        const pIndex = tf.argMax(prediction, axis=1).dataSync();
+            
+        const classNames = ["cancer","no-cancer"];
+            
+            // alert(prediction)
+        alert("test value predicted = " + classNames[pIndex])
+        }
+        run();
+
+
+    </script>
+<body>
+    <h1>Go to Developer tools > Console</h1>
+    <h2>to check the progress of the model</h2>
+</body>
+</html>
